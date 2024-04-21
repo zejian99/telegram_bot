@@ -25,7 +25,7 @@ def add_user(chat_id):
 
 def set_user_active(chat_id, active):
     supabase.table("Users").update({"is_active": active}).eq("chat_id", chat_id).execute()
-    print("User status updated successfully.")
+    print(f"User status set to {active}")
 
 # Load tasks from JSON file
 def load_tasks(chat_id):
