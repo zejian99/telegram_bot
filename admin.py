@@ -27,3 +27,40 @@ def set_user_active(chat_id, active):
     supabase.table("Users").update({"is_active": active}).eq("chat_id", chat_id).execute()
     print("User status updated successfully.")
 
+# Load tasks from JSON file
+def load_tasks(chat_id):
+    result = supabase.table("Tasks").select("*").eq("chat_id", chat_id).execute()
+    return result.data if result.data else []
+
+def save_task(chat_id, task_name, due_date=None):
+    task_data = {
+        'chat_id': chat_id,
+        'task_name': task_name,
+        'due_date': str(due_date) if due_date else None
+    }
+    supabase.table("Tasks").insert(task_data).execute()
+
+def fetch_active_users():
+    """Fetches active users from the Users table."""
+    response = supabase.table("Users").select("chat_id").eq("is_active", True).execute()
+    if response.data:
+        return {user['chat_id'] for user in response.data}
+    return set()
+
+def fetch_all_tasks():
+    """Fetches all tasks from the Tasks table."""
+    response = supabase.table("Tasks").select("*").execute()
+    return response.data if response.data else []
+
+def task_name_exists(chat_id, task_name):
+    """Checks if a given task name already exists for a specific chat_id."""
+    response = supabase.table("Tasks").select("task_name").eq("chat_id", chat_id).eq("task_name", task_name).execute()
+    return bool(response.data)  # Returns True if any task exists, False otherwise
+
+def update_task_due_date(chat_id, task_name, new_due_date):
+    """Updates the due date of a specific task."""
+    return supabase.table("Tasks").update({"due_date": new_due_date}).eq("chat_id", chat_id).eq("task_name", task_name).execute()
+
+def delete_task(chat_id, task_name):
+    """Deletes a specific task based on chat_id and task_name."""
+    return supabase.table("Tasks").delete().eq("chat_id", chat_id).eq("task_name", task_name).execute()
