@@ -34,7 +34,7 @@ def save_task(chat_id, task_name, due_date=None):
 async def add_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if not is_user_active(chat_id):
-        await update.message.reply_text("Please start the bot using /start.")
+        await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     try:
         task = context.args[0]  # Task name
@@ -46,45 +46,64 @@ async def add_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_task(chat_id, task, due_date)
 
         if due_date:
-            await update.message.reply_text(f"Task '{task}' added with due date: {due_date}.")
+            await update.message.reply_text(f"✅ Task '{task}' added with due date: {due_date}. Let's get this done! 💪")
         else:
-            await update.message.reply_text(f"Recurring task '{task}' added.")
+            await update.message.reply_text(f"✅ Recurring task '{task}' added. I'll keep you posted! 📅")
     except IndexError:
-        await update.message.reply_text("Usage: /add <task_name> [<due_date YYYY-MM-DD>]")
+        await update.message.reply_text("📝 Need to add a new task, my love? Here’s how you can tell me: \n"
+    "*Usage:* `/add <task_name> [<due_date YYYY-MM-DD>]`\n"
+    "*Example:* `/add Buy flowers 2022-12-25`\n"
+    "Just type the task and when it’s due, and I’ll remember it for you! 🌷✨",
+    parse_mode='Markdown')
     except ValueError:
-        await update.message.reply_text("Invalid date format. Please use YYYY-MM-DD format.")
+        await update.message.reply_text("Oops! 🙈 Invalid date format. Please use YYYY-MM-DD format, like 2022-12-25.")
 
 
 # Delete task command
 async def delete_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     if not is_user_active(chat_id):
-        await update.message.reply_text("Please start the bot using /start.")
+        await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     try:
         task_name = context.args[0]
         result = supabase.table("Tasks").delete().eq("chat_id", chat_id).eq("task_name", task_name).execute()
         if result.data:
-            await update.message.reply_text(f"Task '{task_name}' deleted.")
+            await update.message.reply_text(f"🗑️ Task '{task_name}' deleted. More space for new adventures! 🌟")
         else:
-            await update.message.reply_text("No such task found.")
+            await update.message.reply_text("Hmm, I couldn't find that task. 🤔 Make sure it's spelled correctly!")
     except IndexError:
-        await update.message.reply_text("Usage: /delete <task_name>")
+        await update.message.reply_text("🗑️ Want to clear a task? Just tell me like this:\n"
+    "*Usage:* `/delete <task_name>`\n"
+    "*Example:* `/delete Buy flowers`\n"
+    "This will remove the task from your list, making room for new adventures! 🌺💖",
+    parse_mode='Markdown')
 
 # List all tasks command
 async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    today = datetime.date.today().isoformat()  # Get today's date for comparison
     if not is_user_active(chat_id):
-        await update.message.reply_text("Please start the bot using /start.")
+        await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     tasks = load_tasks(chat_id)
-    message = "All Tasks:\n"
-    for task in tasks:
-        task_desc = f"{task['task_name']}: due {task['due_date']}" if task['due_date'] else f"{task['task_name']}: non-expiring"
-        message += f"- {task_desc}\n"
     if not tasks:
-        message += "No tasks available."
-    await update.message.reply_text(message)
+        message = "No tasks at the moment. Time to relax and enjoy! 🍹😊"
+    else:
+        message = "Here are all your current tasks, sweetheart: 📝\n"
+        for task in tasks:
+            if task['due_date']:
+                if task['due_date'] == today:
+                    # Special styling for tasks due today
+                    task_desc = f"🔥 *{task['task_name']}*: due *Today*! 🔥"
+                else:
+                    task_desc = f"📅 {task['task_name']}: due on {task['due_date']} 📅"
+            else:
+                # Styling for ongoing tasks
+                task_desc = f"✨ {task['task_name']}: ongoing 💖✨"
+            message += f"- {task_desc}\n"
+
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 
 # Daily reminder job
@@ -102,11 +121,20 @@ async def daily_reminder(context: ContextTypes.DEFAULT_TYPE):
             tasks_by_chat_id[chat_id] = [task]
 
     for chat_id, tasks in tasks_by_chat_id.items():
-        reminder_message = "Daily Tasks Reminder:\n"
+        # Start of the reminder message
+        reminder_message = "🌞 Good Morning, Beautiful! Here’s your love-filled reminder for the day: 🌞\n\n"
+        
+        # Checking and appending each task
         for task in tasks:
             if task['due_date'] is None or task['due_date'] <= today:
-                task_desc = f"{task['task_name']} (Recurring)" if task['due_date'] is None else f"{task['task_name']} (Due: {task['due_date']})"
+                if task['due_date'] is None:
+                    task_desc = f"💖 {task['task_name']} - Recurring 💖"
+                else:
+                    task_desc = f"💖 {task['task_name']} - Due Today: {task['due_date']} 💖"
                 reminder_message += f"- {task_desc}\n"
+
+        # Add a closing line
+        reminder_message += "\nLet’s make today amazing! I believe in you! 😘💪"
         try:
             await context.bot.send_message(chat_id=chat_id, text=reminder_message)
         except Exception as e:
@@ -117,17 +145,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     add_user(chat_id)
     text = """
-    Hi! I'm a reminder bot. I can help you remember your tasks.
-    Commands:
-    /add <task_name> <due_date YYYY-MM-DD>
-    /delete <task_name> <due_date YYYY-MM-DD>
-    /list
+    🌟💖 Hello Beautiful! 💖🌟
 
-    Example:
-    /add Homework 2020-12-31
-    /delete Homework 2020-12-31
+I’m your personal reminder bot, here to help you manage your tasks with love and care! 💓 Here’s what I can do to make your life easier and keep our plans organized:
 
-    The bot will send you a daily reminder of your tasks.
+💝 /start - Wake me up and let the magic begin! This will start our session where you can command me as you please.
+
+💝 /add - Got something new on your mind? Use this to create a new task. Just follow the format /add task_name [due_date YYYY-MM-DD] and I’ll take note!
+
+💝 /delete - Need to make space for new adventures? Use this to delete any task you no longer need. Just type /delete task_name and consider it gone!
+
+💝 /list - Want to see what’s on the agenda? Use this to list all your current tasks. I’ll display everything that’s planned.
+
+💝 /stop - Need a break from me? Use this to stop all notifications and commands. Don’t worry, I’ll be here waiting whenever you want to start again.
+
+Use these commands to interact with me anytime you like! I’m here to help you keep track of everything important to us. 💌👩‍❤️‍💋‍👨
+
+Let’s keep our lives organized and full of love! 💕
     """
     
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
@@ -138,19 +172,13 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     set_user_active(chat_id, False)  # Set the user as inactive
 
-    await context.bot.send_message(chat_id=chat_id, text="You have stopped the bot. You will no longer receive reminders.")
+    await context.bot.send_message(chat_id=chat_id, text="💔 You've stopped the bot, my love. I'll miss reminding you about your tasks! If you change your mind, just type /start to bring me back. I’ll be here waiting and ready to help! 💖",
+    parse_mode='Markdown')
 
 
 if __name__ == '__main__':
     token = get_settings().BOT_TOKEN
     application = ApplicationBuilder().token(token).build()
-
-    # Handlers
-    start_handler = CommandHandler('start', start)
-    add_task_handler = CommandHandler('add', add_task)
-    delete_task_handler = CommandHandler('delete', delete_task)
-    list_tasks_handler = CommandHandler('list', list_tasks)
-
     # Handlers
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler('stop', stop))
