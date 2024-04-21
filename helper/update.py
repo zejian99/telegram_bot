@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, Co
 from telegram import ReplyKeyboardMarkup
 from supabase import create_client, Client
 
-from admin import load_tasks, save_task, update_task_due_date
+from admin import is_user_active, load_tasks, save_task, update_task_due_date
 from config import get_settings
 
 # Extending existing conversation states
@@ -13,6 +13,9 @@ LIST_TASKS_UPDATE, CHOOSE_TASK_TO_UPDATE, UPDATE_DUE_DATE = range(5, 8)
 
 async def start_update(update: Update, context):
     chat_id = update.effective_chat.id
+    if not is_user_active(chat_id):
+        await update.message.reply_text("Please click /start to activate the bot before adding tasks. 🙏")
+        return ConversationHandler.END
     # Fetch tasks from the database
     tasks = load_tasks(chat_id)
     if tasks:

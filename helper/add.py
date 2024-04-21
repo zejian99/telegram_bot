@@ -6,12 +6,16 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, Co
 from telegram import ReplyKeyboardMarkup
 from supabase import create_client, Client
 
-from admin import save_task, task_name_exists
+from admin import is_user_active, save_task, task_name_exists
 from config import get_settings
 
 TASK_NAME, TASK_TYPE, TASK_DATE = range(3)
 
 async def start_add(update: Update, context):
+    chat_id = update.effective_chat.id
+    if not is_user_active(chat_id):
+        await update.message.reply_text("Please click /start to activate the bot before adding tasks. 🙏")
+        return ConversationHandler.END
     await update.message.reply_text("💖 Sweetheart, what's the task you'd like to add today?")
     return TASK_NAME
 

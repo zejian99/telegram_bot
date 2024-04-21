@@ -5,7 +5,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, Co
 from telegram import ReplyKeyboardMarkup
 from supabase import create_client, Client
 
-from admin import delete_task, load_tasks, save_task
+from admin import delete_task, is_user_active, load_tasks, save_task
 from config import get_settings
 
 # Supabase client initialization
@@ -18,6 +18,9 @@ LIST_TASKS, CHOOSE_TASK_TO_DELETE = range(3, 5)
 
 async def start_delete(update: Update, context):
     chat_id = update.effective_chat.id
+    if not is_user_active(chat_id):
+        await update.message.reply_text("Please click /start to activate the bot before adding tasks. 🙏")
+        return ConversationHandler.END
     # Fetch tasks from the database
     tasks = load_tasks(chat_id)
     if tasks:
