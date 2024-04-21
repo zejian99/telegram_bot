@@ -37,6 +37,14 @@ async def add_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     try:
+        # Check if at least one argument is given (for the task name)
+        if not context.args:
+            await update.message.reply_text("Hmm, it seems like you didn't tell me the task name. 🤔\n"
+                                            "Please tell me what you need to do, like this:\n"
+                                            "*Usage:* `/add <task_name> [<due_date YYYY-MM-DD>]`\n"
+                                            "*Example:* `/add Buy flowers 2022-12-25`",
+                                            parse_mode='Markdown')
+            return
         # Join all elements of context.args to form the task name, assuming the last element might be a date
         if len(context.args) > 1 and '-' in context.args[-1]:  # Check if the last argument might be a date
             due_date = datetime.datetime.strptime(context.args[-1], "%Y-%m-%d").date()
@@ -67,20 +75,28 @@ async def delete_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_user_active(chat_id):
         await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
-    try:
-        # Join all elements of context.args to form the full task name
-        task_name = ' '.join(context.args)
-        result = supabase.table("Tasks").delete().eq("chat_id", chat_id).eq("task_name", task_name).execute()
-        if result.data:
-            await update.message.reply_text(f"🗑️ Task '{task_name}' deleted. More space for new adventures! 🌟")
-        else:
-            await update.message.reply_text("Hmm, I couldn't find that task. 🤔 Make sure it's spelled correctly!")
-    except IndexError:
-        await update.message.reply_text("🗑️ Want to clear a task? Just tell me like this:\n"
-    "*Usage:* `/delete <task_name>`\n"
-    "*Example:* `/delete Buy flowers`\n"
-    "This will remove the task from your list, making room for new adventures! 🌺💖",
-    parse_mode='Markdown')
+    
+    if not context.args:
+        await update.message.reply_text("Hmm... it seems you forgot to tell me which task to delete! 🤔\n"
+                                        "*Usage:* `/delete <task_name>`\n"
+                                        "*Example:* `/delete Buy flowers`",
+                                        parse_mode='Markdown')
+        return
+    
+    task_name = ' '.join(context.args).strip()
+
+    if not task_name:
+        await update.message.reply_text("Oops! 🙈 It looks like you didn't enter a task name. Please try again.\n"
+                                        "*Example:* `/delete Buy flowers`",
+                                        parse_mode='Markdown')
+        return
+
+    result = supabase.table("Tasks").delete().eq("chat_id", chat_id).eq("task_name", task_name).execute()
+
+    if result.data:
+        await update.message.reply_text(f"🗑️ Task '{task_name}' deleted. More space for new adventures! 🌟")
+    else:
+        await update.message.reply_text("Uh-oh, I couldn’t find a task named '{task_name}'. Please check the spelling and try again. 💖")
 
 # List all tasks command
 async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -113,6 +129,7 @@ async def update_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_user_active(chat_id):
         await update.message.reply_text("💬 Please start me using /start to manage your tasks! 💖")
         return
+        
 
     # Ensure there is at least one argument for the task name and one for the date
     if len(context.args) < 2:
@@ -126,6 +143,12 @@ async def update_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Join all arguments except the last as the task name (assuming last is the date)
     task_name = ' '.join(context.args[:-1])
     new_due_date_str = context.args[-1]
+
+    if not task_name:
+        await update.message.reply_text("Oops! 🙈 You didn't mention the task name. Please try again with a valid task name.\n"
+                                        "*Example:* `/update Buy flowers 2023-01-25`",
+                                        parse_mode='Markdown')
+        return
 
     try:
         # Try to parse the date to ensure it's valid
