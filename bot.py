@@ -108,6 +108,40 @@ async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(message, parse_mode='Markdown')
 
+async def update_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    if not is_user_active(chat_id):
+        await update.message.reply_text("💬 Please start me using /start to manage your tasks! 💖")
+        return
+
+    # Ensure there is at least one argument for the task name and one for the date
+    if len(context.args) < 2:
+        await update.message.reply_text(
+            "🤗 Seems like something's missing! I need both the task name and a new due date, my love.\n"
+            "*Usage:* `/update <task_name> <new_due_date YYYY-MM-DD>`\n"
+            "*Example:* `/update Buy flowers 2023-01-25`",
+            parse_mode='Markdown')
+        return
+    
+    # Join all arguments except the last as the task name (assuming last is the date)
+    task_name = ' '.join(context.args[:-1])
+    new_due_date_str = context.args[-1]
+
+    try:
+        # Try to parse the date to ensure it's valid
+        new_due_date = datetime.datetime.strptime(new_due_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        await update.message.reply_text("Oops! 🙈 That date didn't look right. Please use the YYYY-MM-DD format, like 2023-01-25. 💕")
+        return
+
+    # Attempt to update the task in the database
+    result = supabase.table("Tasks").update({"due_date": str(new_due_date)}).eq("chat_id", chat_id).eq("task_name", task_name).execute()
+    
+    if result.data:
+        await update.message.reply_text(f"✅ Yay! The due date for '{task_name}' is now set for {new_due_date}. We're all updated! 🎉")
+    else:
+        await update.message.reply_text(f"Uh-oh, I couldn’t find a task named '{task_name}'. Could you double-check the spelling for me? 💖")
+
 
 # Daily reminder job
 async def daily_reminder(context: ContextTypes.DEFAULT_TYPE):
@@ -188,6 +222,7 @@ if __name__ == '__main__':
     application.add_handler(CommandHandler('add', add_task))
     application.add_handler(CommandHandler('delete', delete_task))
     application.add_handler(CommandHandler('list', list_tasks))
+    application.add_handler(CommandHandler('update', update_task))
 
     # Schedule the daily reminder
     job_queue = application.job_queue
