@@ -37,11 +37,13 @@ async def add_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     try:
-        task = context.args[0]  # Task name
-        if len(context.args) > 1:
-            due_date = datetime.datetime.strptime(context.args[1], "%Y-%m-%d").date()
+        # Join all elements of context.args to form the task name, assuming the last element might be a date
+        if len(context.args) > 1 and '-' in context.args[-1]:  # Check if the last argument might be a date
+            due_date = datetime.datetime.strptime(context.args[-1], "%Y-%m-%d").date()
+            task = ' '.join(context.args[:-1])  # Join all but the last as the task name
         else:
             due_date = None  # No date provided, task is recurring
+            task = ' '.join(context.args)  # Join all elements to form the task name
 
         save_task(chat_id, task, due_date)
 
@@ -66,7 +68,8 @@ async def delete_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     try:
-        task_name = context.args[0]
+        # Join all elements of context.args to form the full task name
+        task_name = ' '.join(context.args)
         result = supabase.table("Tasks").delete().eq("chat_id", chat_id).eq("task_name", task_name).execute()
         if result.data:
             await update.message.reply_text(f"🗑️ Task '{task_name}' deleted. More space for new adventures! 🌟")
