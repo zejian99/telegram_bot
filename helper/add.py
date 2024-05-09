@@ -2,12 +2,10 @@
 import datetime
 from telegram import Update
 from telegram import ReplyKeyboardRemove, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, ConversationHandler, MessageHandler, filters
+from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, filters
 from telegram import ReplyKeyboardMarkup
-from supabase import create_client, Client
 
 from admin import is_user_active, save_task, task_name_exists
-from config import get_settings
 
 TASK_NAME, TASK_TYPE, TASK_DATE = range(3)
 

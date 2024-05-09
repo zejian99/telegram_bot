@@ -1,14 +1,20 @@
 annotated-types==0.6.0
 anyio==4.1.0
 APScheduler==3.10.4
+blinker==1.8.2
 certifi==2023.11.17
+click==8.1.7
 deprecation==2.1.0
 exceptiongroup==1.2.0
+Flask==3.0.3
 gotrue==2.4.2
 h11==0.14.0
 httpcore==1.0.2
 httpx==0.25.2
 idna==3.6
+itsdangerous==2.2.0
+Jinja2==3.1.4
+MarkupSafe==2.1.5
 packaging==24.0
 postgrest==0.16.3
 pydantic==2.0.2
@@ -17,6 +23,7 @@ pydantic_core==2.1.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-telegram-bot==20.7
+python-telegram-bot[webhooks]==20.7
 pytz==2024.1
 realtime==1.0.4
 six==1.16.0
@@ -25,6 +32,8 @@ storage3==0.7.4
 StrEnum==0.4.15
 supabase==2.4.3
 supafunc==0.4.5
+tornado==6.3.3
 typing_extensions==4.11.0
 tzlocal==5.2
 websockets==12.0
+Werkzeug==3.0.3

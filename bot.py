@@ -1,9 +1,8 @@
 import logging
 import datetime
-from telegram import ReplyKeyboardRemove, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, ConversationHandler, MessageHandler, filters
-from telegram import ReplyKeyboardMarkup
-from supabase import create_client, Client
+import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 from admin import add_user, fetch_active_users, fetch_all_tasks, is_user_active, load_tasks, save_task, set_user_active
 from config import get_settings
 from helper.add import add_conv_handler
@@ -15,6 +14,11 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+async def default_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Hmm, I'm not sure what you mean by that. 🤔 If you need help, check out the commands I understand by typing / !"
+    )
+
 # List all tasks command
 async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -22,23 +26,18 @@ async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
         return
     today = datetime.date.today().isoformat()  # Get today's date for comparison
-    if not is_user_active(chat_id):
-        await update.message.reply_text("💬 Please start me using /start so we can organize your tasks together! 💖")
-        return
     tasks = load_tasks(chat_id)
     if not tasks:
         message = "No tasks at the moment. Time to relax and enjoy! 🍹😊"
     else:
         message = "Here are all your current tasks, sweetheart: 📝\n"
         for task in tasks:
-            if task['due_date']:
-                if task['due_date'] == today:
-                    # Special styling for tasks due today
-                    task_desc = f"🔥 *{task['task_name']}*: due *Today*! 🔥"
-                else:
-                    task_desc = f"📅 {task['task_name']}: due on {task['due_date']} 📅"
+            due_date = task.get('due_date')
+            if due_date == today:
+                task_desc = f"🔥 *{task['task_name']}*: due *Today*! 🔥"
+            elif due_date:
+                task_desc = f"📅 {task['task_name']}: due on {due_date} 📅"
             else:
-                # Styling for ongoing tasks
                 task_desc = f"✨ {task['task_name']}: ongoing 💖✨"
             message += f"- {task_desc}\n"
 
@@ -117,6 +116,7 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     token = get_settings().BOT_TOKEN
+    WEBHOOK_URL = get_settings().WEBHOOK_URL
     application = ApplicationBuilder().token(token).build()
     # Handlers
     application.add_handler(CommandHandler('start', start))
@@ -131,7 +131,17 @@ if __name__ == '__main__':
     reminder_time = datetime.time(hour=10)  # Set your preferred reminder time
     job_queue.run_daily(daily_reminder, time=reminder_time, days=(0, 1, 2, 3, 4, 5, 6))
 
+    # Add the default handler last
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, default_response))
+
     # Testing purpose, send the messge after 1 minute
     # job_queue.run_once(daily_reminder, when=30) 
     
-    application.run_polling()
+    # application.run_polling()
+    # No polling needed, prepare for webhook setup
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=8888,
+        url_path=token,
+        webhook_url=f"{WEBHOOK_URL}/{token}"
+    )

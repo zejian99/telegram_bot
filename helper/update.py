@@ -1,12 +1,9 @@
 import datetime
 from telegram import Update
 from telegram import ReplyKeyboardRemove, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, ConversationHandler, MessageHandler, filters
-from telegram import ReplyKeyboardMarkup
-from supabase import create_client, Client
+from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, filters
 
-from admin import is_user_active, load_tasks, save_task, update_task_due_date
-from config import get_settings
+from admin import is_user_active, load_tasks, update_task_due_date
 
 # Extending existing conversation states
 LIST_TASKS_UPDATE, CHOOSE_TASK_TO_UPDATE, UPDATE_DUE_DATE = range(5, 8)

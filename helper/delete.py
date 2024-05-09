@@ -1,9 +1,6 @@
-import datetime
 from telegram import Update
 from telegram import ReplyKeyboardRemove, Update
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackContext, ContextTypes, ConversationHandler, MessageHandler, filters
-from telegram import ReplyKeyboardMarkup
-from supabase import create_client, Client
+from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, filters
 
 from admin import delete_task, is_user_active, load_tasks, save_task
 from config import get_settings

@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     BOT_TOKEN: str
     DATABASE_URL: str
     DATABASE_KEY: str
+    WEBHOOK_URL: str
     class Config:
         env_file = ".env"
 
